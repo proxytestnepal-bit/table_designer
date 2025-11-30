@@ -9,12 +9,19 @@ import { renderVideo } from './utils/videoRenderer';
 import { renderTableImage } from './utils/imageRenderer';
 import { clsx } from 'clsx';
 
+// Fallback Embedded SVG Logo (Bar Chart Icon) if local file fails
+const EMBEDDED_LOGO = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgdmlld0JveD0iMCAwIDUxMiA1MTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjUxMiIgaGVpZ2h0PSI1MTIiIHJ4PSIxMjgiIGZpbGw9IiMwRjE3MkEiLz48cGF0aCBkPSJNMTQwIDM2MFYyNjAiIHN0cm9rZT0iIzNCODJGNiIgc3Ryb2tlLXdpZHRoPSI0OCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+PHBhdGggZD0iTTI1NiAzNjBWMTUyIiBzdHJva2U9IiM4QjVDRjYiIHN0cm9rZS13aWR0aD0iNDgiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjxwYXRoIGQ9Ik0zNzIgMzYwVjIyMCIgc3Ryb2tlPSIjRUM0ODk5IiBzdHJva2Utd2lkdGg9IjQ4IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48L3N2Zz4=";
+const LOCAL_LOGO = "./images/logo.jpg";
+
 function App() {
   // State
   const [data, setData] = useState<TableData>(DEFAULT_TABLE_DATA);
   const [jsonString, setJsonString] = useState<string>(JSON.stringify(DEFAULT_TABLE_DATA, null, 2));
   const [isValidJson, setIsValidJson] = useState(true);
   const [jsonError, setJsonError] = useState<string | null>(null);
+  
+  // Logo State
+  const [logoSrc, setLogoSrc] = useState(LOCAL_LOGO);
   
   const [isPlaying, setIsPlaying] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -168,7 +175,7 @@ function App() {
     setIsPlaying(false); // Stop preview during export
 
     try {
-        const blob = await renderVideo(data, config, voicePcm, (progress) => {
+        const blob = await renderVideo(data, config, voicePcm, logoSrc, (progress) => {
             setExportProgress(Math.round(progress * 100));
         });
 
@@ -191,7 +198,7 @@ function App() {
       if (isExporting) return;
       setIsExporting(true);
       try {
-          const dataUrl = await renderTableImage(data, config);
+          const dataUrl = await renderTableImage(data, config, logoSrc);
           const a = document.createElement('a');
           a.href = dataUrl;
           a.download = `loksewa-post-${config.theme}-${Date.now()}.png`;
@@ -210,8 +217,16 @@ function App() {
       {!isFullscreen && (
         <header className="px-6 py-4 border-b border-slate-800 bg-slate-900/50 backdrop-blur-md flex items-center justify-between sticky top-0 z-50">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center shadow-lg shadow-blue-500/20">
-              <img src="logo.jpg" alt="Logo" className="w-full h-full object-cover" />
+            <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center shadow-lg shadow-blue-500/20 bg-slate-800">
+              <img 
+                src={logoSrc} 
+                alt="Logo" 
+                className="w-full h-full object-cover" 
+                onError={(e) => {
+                    e.currentTarget.onerror = null; // Prevent infinite loop
+                    setLogoSrc(EMBEDDED_LOGO); // Fallback to embedded
+                }}
+              />
             </div>
             <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">
               Loksewa Automatic

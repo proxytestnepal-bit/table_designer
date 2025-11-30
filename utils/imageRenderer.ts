@@ -1,7 +1,7 @@
 import { TableData, AnimationConfig, Theme } from '../types';
 import { getThemeConfig, loadImage, getLines } from './videoRenderer';
 
-export async function renderTableImage(data: TableData, config: AnimationConfig): Promise<string> {
+export async function renderTableImage(data: TableData, config: AnimationConfig, logoSrc?: string): Promise<string> {
     // 4:5 Aspect Ratio - Optimal for Facebook/Instagram Feeds (High Res)
     const width = 2160;
     const height = 2700;
@@ -77,10 +77,12 @@ export async function renderTableImage(data: TableData, config: AnimationConfig)
 
     // Load Logo
     let logoImg: HTMLImageElement | null = null;
-    try {
-        logoImg = await loadImage('logo.jpg');
-    } catch (e) {
-        console.warn("Logo failed to load");
+    if (logoSrc) {
+        try {
+            logoImg = await loadImage(logoSrc);
+        } catch (e) {
+            console.warn("Logo failed to load");
+        }
     }
 
     // --- Content Measurement & Layout ---
@@ -318,7 +320,7 @@ export async function renderTableImage(data: TableData, config: AnimationConfig)
              try { return new URL(s).hostname.replace('www.', ''); } catch { return s; }
         }).join(', '); 
         
-        // Truncate sources if extremely long, but typically this is fine in footer
+        // Truncate sources if extremely long
         let printSource = sourceText;
         if(ctx.measureText(printSource).width > contentWidth * 0.5) {
              printSource = getLines(ctx, sourceText, contentWidth * 0.5)[0] + "...";
@@ -336,19 +338,52 @@ export async function renderTableImage(data: TableData, config: AnimationConfig)
 
     // Footer Logo
     if (logoImg) {
-        const logoSize = 65;
+        const logoSize = 80;
         const textWidth = ctx.measureText(brandText).width;
-        const logoX = brandX - textWidth - logoSize - 20; // 20px padding left of text
-        const logoY = footerY - 10; // Slightly adjust vertical alignment
+        // Position logo to the left of the brand text
+        const logoX = brandX - textWidth - logoSize - 25; 
+        const logoY = footerY - 20; // Align vertically with text baseline roughly
         
         ctx.save();
+        // Rounded corner clip for logo
+        const radius = 10;
         ctx.beginPath();
-        ctx.arc(logoX + logoSize/2, logoY + logoSize/2, logoSize/2, 0, Math.PI*2);
+        ctx.moveTo(logoX + radius, logoY);
+        ctx.lineTo(logoX + logoSize - radius, logoY);
+        ctx.quadraticCurveTo(logoX + logoSize, logoY, logoX + logoSize, logoY + radius);
+        ctx.lineTo(logoX + logoSize, logoY + logoSize - radius);
+        ctx.quadraticCurveTo(logoX + logoSize, logoY + logoSize, logoX + logoSize - radius, logoY + logoSize);
+        ctx.lineTo(logoX + radius, logoY + logoSize);
+        ctx.quadraticCurveTo(logoX, logoY + logoSize, logoX, logoY + logoSize - radius);
+        ctx.lineTo(logoX, logoY + radius);
+        ctx.quadraticCurveTo(logoX, logoY, logoX + radius, logoY);
         ctx.closePath();
         ctx.clip();
         
-        ctx.drawImage(logoImg, logoX, logoY, logoSize, logoSize);
+        // Draw image "contain" style
+        const imgAspect = logoImg.width / logoImg.height;
+        let drawW = logoSize;
+        let drawH = logoSize;
+        let dx = logoX;
+        let dy = logoY;
+        
+        if (imgAspect > 1) { // Landscape image
+            drawH = logoSize / imgAspect;
+            dy = logoY + (logoSize - drawH) / 2;
+        } else { // Portrait image
+            drawW = logoSize * imgAspect;
+            dx = logoX + (logoSize - drawW) / 2;
+        }
+        
+        ctx.drawImage(logoImg, dx, dy, drawW, drawH);
         ctx.restore();
+    } else {
+        // Fallback if logo fails to load: Draw text placeholder
+        const textWidth = ctx.measureText(brandText).width;
+        const logoX = brandX - textWidth - 20; 
+        ctx.textAlign = 'right';
+        ctx.fillStyle = 'rgba(255,255,255,0.3)';
+        ctx.fillText("Loksewa", logoX, footerY);
     }
 
     return canvas.toDataURL('image/png');

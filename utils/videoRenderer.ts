@@ -23,9 +23,16 @@ export function getLines(ctx: CanvasRenderingContext2D, text: string, maxWidth: 
 export const loadImage = (src: string): Promise<HTMLImageElement> => {
     return new Promise((resolve, reject) => {
         const img = new Image();
-        img.crossOrigin = "anonymous";
+        // Only set crossOrigin for remote/cross-domain images. 
+        // Local/Relative images (./logo.jpg) usually fail if crossOrigin is set without proper server headers.
+        if (src.startsWith('http') && new URL(src, window.location.href).origin !== window.location.origin) {
+            img.crossOrigin = "anonymous";
+        }
         img.onload = () => resolve(img);
-        img.onerror = reject;
+        img.onerror = () => {
+            console.warn(`Failed to load image: ${src}`);
+            reject(new Error(`Failed to load image: ${src}`));
+        };
         img.src = src;
     });
 };
@@ -92,6 +99,7 @@ export async function renderVideo(
     data: TableData, 
     config: AnimationConfig, 
     voicePcm: string | null,
+    logoSrc: string | undefined,
     onProgress: (progress: number) => void
 ): Promise<Blob> {
     return new Promise(async (resolve, reject) => {
@@ -119,10 +127,12 @@ export async function renderVideo(
 
         // Load Logo
         let logoImage: HTMLImageElement | null = null;
-        try {
-            logoImage = await loadImage('logo.jpg');
-        } catch (e) {
-            console.warn("Logo failed to load");
+        if (logoSrc) {
+            try {
+                logoImage = await loadImage(logoSrc);
+            } catch (e) {
+                console.warn("Logo failed to load");
+            }
         }
 
         // Setup Audio
@@ -367,20 +377,45 @@ export async function renderVideo(
 
             // Watermark Logo (Top Right)
             if (logoImage) {
-                const logoSize = 70;
+                const logoSize = 80;
                 const pad = 30;
                 ctx.save();
                 ctx.globalAlpha = 0.9;
                 
-                // Circular Clip
                 const lx = canvas.width - logoSize - pad;
                 const ly = pad;
+                
+                // Draw rounded rectangle container logic
+                const radius = 12;
                 ctx.beginPath();
-                ctx.arc(lx + logoSize/2, ly + logoSize/2, logoSize/2, 0, Math.PI*2);
+                ctx.moveTo(lx + radius, ly);
+                ctx.lineTo(lx + logoSize - radius, ly);
+                ctx.quadraticCurveTo(lx + logoSize, ly, lx + logoSize, ly + radius);
+                ctx.lineTo(lx + logoSize, ly + logoSize - radius);
+                ctx.quadraticCurveTo(lx + logoSize, ly + logoSize, lx + logoSize - radius, ly + logoSize);
+                ctx.lineTo(lx + radius, ly + logoSize);
+                ctx.quadraticCurveTo(lx, ly + logoSize, lx, ly + logoSize - radius);
+                ctx.lineTo(lx, ly + radius);
+                ctx.quadraticCurveTo(lx, ly, lx + radius, ly);
                 ctx.closePath();
                 ctx.clip();
 
-                ctx.drawImage(logoImage, lx, ly, logoSize, logoSize);
+                // Draw image containing aspect ratio
+                const imgAspect = logoImage.width / logoImage.height;
+                let drawW = logoSize;
+                let drawH = logoSize;
+                let dx = lx;
+                let dy = ly;
+                
+                if (imgAspect > 1) { // Landscape
+                    drawH = logoSize / imgAspect;
+                    dy = ly + (logoSize - drawH) / 2;
+                } else { // Portrait
+                    drawW = logoSize * imgAspect;
+                    dx = lx + (logoSize - drawW) / 2;
+                }
+                
+                ctx.drawImage(logoImage, dx, dy, drawW, drawH);
                 ctx.restore();
             }
             

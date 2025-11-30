@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Type, Schema, Modality } from "@google/genai";
 import { TableData } from "../types";
 
@@ -69,9 +68,15 @@ export const generateTableFromPrompt = async (prompt: string): Promise<TableData
     if (!text) throw new Error("No data returned from Gemini");
 
     const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
-    const sources = groundingChunks
-      ?.map((chunk: any) => chunk.web?.uri)
-      .filter((uri: any): uri is string => typeof uri === 'string');
+    const sources: string[] = [];
+    if (Array.isArray(groundingChunks)) {
+        groundingChunks.forEach((chunk: any) => {
+            const uri = chunk.web?.uri;
+            if (typeof uri === 'string') {
+                sources.push(uri);
+            }
+        });
+    }
 
     let parsedData: TableData;
     try {
@@ -85,7 +90,7 @@ export const generateTableFromPrompt = async (prompt: string): Promise<TableData
         return await fixTableJson(text);
     }
     
-    if (sources && sources.length > 0) {
+    if (sources.length > 0) {
         parsedData.sources = [...new Set(sources)];
     }
 
