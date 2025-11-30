@@ -4,7 +4,7 @@ import { TableData, AnimationConfig, Theme, AnimationStyle, Layout } from './typ
 import { DEFAULT_TABLE_DATA, DEFAULT_ANIMATION_CONFIG } from './constants';
 import { TablePreview } from './components/TablePreview';
 import { Editor } from './components/Editor';
-import { generateTableFromPrompt, fixTableJson, generateBackgroundImage, generateVoiceover } from './services/geminiService';
+import { generateTableFromPrompt, fixTableJson, generateBackgroundImage, generateVoiceover, generateSummaryFromData } from './services/geminiService';
 import { renderVideo } from './utils/videoRenderer';
 import { renderTableImage } from './utils/imageRenderer';
 import { clsx } from 'clsx';
@@ -115,14 +115,30 @@ function App() {
   };
 
   const handleGenerateVoice = async () => {
-      if (!data.summary) {
-          alert("No summary found in data to read. Try regenerating the table first.");
-          return;
-      }
       setIsGenVoice(true);
       try {
-          const pcm = await generateVoiceover(data.summary);
-          setVoicePcm(pcm);
+          let summaryText = data.summary;
+          
+          // If no summary exists, generate one from the data first
+          if (!summaryText || summaryText.trim() === '') {
+              try {
+                  summaryText = await generateSummaryFromData(data);
+                  // Update local data with new summary
+                  const newData = { ...data, summary: summaryText };
+                  setData(newData);
+                  setJsonString(JSON.stringify(newData, null, 2));
+              } catch (err) {
+                  console.error("Failed to generate summary from data", err);
+                  alert("Could not automatically generate a summary. Please add a 'summary' field to your JSON.");
+                  setIsGenVoice(false);
+                  return;
+              }
+          }
+
+          if (summaryText) {
+            const pcm = await generateVoiceover(summaryText);
+            setVoicePcm(pcm);
+          }
       } catch (e) {
           console.error(e);
           alert("Failed to generate voiceover.");

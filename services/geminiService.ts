@@ -125,6 +125,40 @@ export const fixTableJson = async (brokenJson: string): Promise<TableData> => {
   }
 }
 
+export const generateSummaryFromData = async (data: TableData): Promise<string> => {
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  
+  // Create a simplified text representation of the table for the prompt
+  // Limiting to first 10 rows to save context/tokens, which is usually enough for a summary
+  const tableContext = `
+    Title: ${data.title || "Untitled Table"}
+    Columns: ${data.columns.join(", ")}
+    Data (First 10 rows):
+    ${data.data.slice(0, 10).map(row => row.join(" | ")).join("\n")}
+  `;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: `You are a professional narrator. 
+      Task: Write a captivating, short (1-2 sentences) summary of the provided data table. 
+      Goal: This text will be converted to speech and played as an introduction to the data visualization.
+      Tone: Engaging, informative, and clear.
+      
+      Table Data:
+      ${tableContext}
+      `,
+    });
+
+    const text = response.text;
+    if (!text) throw new Error("No summary generated");
+    return text.trim();
+  } catch (error) {
+    console.error("Summary Generation Error:", error);
+    throw error;
+  }
+};
+
 export const generateBackgroundImage = async (prompt: string): Promise<string> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
