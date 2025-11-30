@@ -281,83 +281,222 @@ export async function renderVideo(
             if (stepTime < fadeTime) opacity = stepTime / fadeTime;
             if (stepTime > durationPerItem - fadeTime) opacity = (durationPerItem - stepTime) / fadeTime;
 
-            const setTextShadow = (blur: number, color: string) => {
-                ctx.shadowBlur = blur;
-                ctx.shadowColor = color;
-            };
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            ctx.textBaseline = 'middle';
 
-            const resetShadow = () => {
-                ctx.shadowBlur = 0;
-            };
+            // Layout Switching
+            switch (config.layout) {
+                case Layout.SPLIT: {
+                    // Split Logic
+                    ctx.globalAlpha = 0.5;
+                    const grad = ctx.createLinearGradient(centerX, centerY - 300, centerX, centerY + 300);
+                    grad.addColorStop(0, 'transparent');
+                    grad.addColorStop(0.5, themeStyle.lineColor1);
+                    grad.addColorStop(1, 'transparent');
+                    ctx.fillStyle = grad;
+                    ctx.fillRect(centerX - 1, centerY - 300, 2, 600);
 
-            // Layout Logic (Simplified for brevity, same as previous but with themeStyle vars)
-            // ... (Full layout logic is preserved implicitly by structure, focusing on shared drawing commands)
-            
-            // Re-implementing Stacked as Default fallback for robust rendering
-            if (config.layout === Layout.SPLIT) {
-                 const midX = canvas.width / 2;
-                 ctx.textAlign = 'right';
-                 ctx.globalAlpha = 0.6;
-                 ctx.font = `bold 32px ${themeStyle.fontHeader}`;
-                 ctx.fillStyle = '#93c5fd';
-                 ctx.fillText(subjectLabel.toUpperCase(), midX - 50, canvas.height * 0.45);
- 
-                 ctx.globalAlpha = 1;
-                 ctx.font = `900 60px ${themeStyle.fontMain}`;
-                 ctx.fillStyle = themeStyle.subjectColor;
-                 ctx.fillText(subject, midX - 50, canvas.height * 0.52);
- 
-                 if (numCols > 1) {
-                     ctx.textAlign = 'left';
-                     ctx.globalAlpha = opacity;
-                     ctx.font = `italic 500 40px ${themeStyle.fontHeader}`;
-                     ctx.fillStyle = themeStyle.headerColor;
-                     ctx.fillText(header, midX + 50, canvas.height * 0.45);
-                     ctx.font = `bold 50px ${themeStyle.fontMain}`;
-                     ctx.fillStyle = themeStyle.valueColor;
-                     const valueLines = getLines(ctx, value, 450);
-                     valueLines.forEach((line, i) => ctx.fillText(line, midX + 50, canvas.height * 0.52 + (i * 60)));
-                 }
-            } else {
-                 // Default Stacked
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                
-                ctx.globalAlpha = 0.6;
-                ctx.font = `bold 42px ${themeStyle.fontHeader}`;
-                ctx.fillStyle = '#93c5fd';
-                ctx.fillText(subjectLabel.toUpperCase(), canvas.width / 2, canvas.height * 0.26);
+                    // Subject
+                    ctx.textAlign = 'right';
+                    ctx.globalAlpha = 0.6;
+                    ctx.font = `bold 32px ${themeStyle.fontHeader}`;
+                    ctx.fillStyle = '#93c5fd'; 
+                    ctx.fillText(subjectLabel.toUpperCase(), centerX - 50, centerY - 50);
+    
+                    ctx.globalAlpha = 1; 
+                    ctx.font = `900 60px ${themeStyle.fontMain}`;
+                    ctx.fillStyle = themeStyle.subjectColor;
+                    const subjectLines = getLines(ctx, subject, 400); 
+                    subjectLines.forEach((l, i) => ctx.fillText(l, centerX - 50, centerY + 20 + (i * 70)));
+    
+                    // Attribute
+                    if (numCols > 1) {
+                        ctx.textAlign = 'left';
+                        ctx.globalAlpha = opacity;
+                        ctx.font = `italic 500 40px ${themeStyle.fontHeader}`;
+                        ctx.fillStyle = themeStyle.headerColor;
+                        ctx.fillText(header, centerX + 50, centerY - 50);
+                        
+                        ctx.font = `bold 50px ${themeStyle.fontMain}`;
+                        ctx.fillStyle = themeStyle.valueColor;
+                        const valueLines = getLines(ctx, value, 400);
+                        valueLines.forEach((line, i) => ctx.fillText(line, centerX + 50, centerY + 20 + (i * 60)));
+                    }
+                    break;
+                }
 
-                const isRowStart = attrIdx === 0;
-                let subjectY = canvas.height * 0.44; 
-                let subjectOpacity = 1;
-                if (isRowStart && stepTime < 500) {
-                    const p = stepTime / 500;
-                    subjectY += (1 - p) * 20;
-                    subjectOpacity = p;
+                case Layout.DIAGONAL: {
+                    // Subject Top Left
+                    const leftX = 100;
+                    const topY = 250;
+                    ctx.textBaseline = 'top';
+                    
+                    ctx.textAlign = 'left';
+                    ctx.globalAlpha = 0.6;
+                    ctx.font = `bold 32px ${themeStyle.fontHeader}`;
+                    ctx.fillStyle = '#93c5fd';
+                    ctx.fillText(subjectLabel.toUpperCase(), leftX, topY);
+
+                    ctx.globalAlpha = 1;
+                    ctx.font = `900 70px ${themeStyle.fontMain}`;
+                    ctx.fillStyle = themeStyle.subjectColor;
+                    const subjectLines = getLines(ctx, subject, 600);
+                    subjectLines.forEach((l, i) => ctx.fillText(l, leftX, topY + 60 + (i * 80)));
+                    
+                    // Separator
+                    const lineY = topY + 60 + (subjectLines.length * 80) + 20;
+                    ctx.fillStyle = themeStyle.lineColor1;
+                    ctx.fillRect(leftX, lineY, 400, 4);
+
+                    // Attribute Bottom Right
+                    const rightX = canvas.width - 100;
+                    const bottomY = canvas.height - 350;
+
+                    if (numCols > 1) {
+                        ctx.textAlign = 'right';
+                        ctx.globalAlpha = opacity;
+                        ctx.font = `italic 500 50px ${themeStyle.fontHeader}`;
+                        ctx.fillStyle = themeStyle.headerColor;
+                        ctx.fillText(header, rightX, bottomY);
+                        
+                        ctx.font = `bold 80px ${themeStyle.fontMain}`;
+                        ctx.fillStyle = themeStyle.valueColor;
+                         const valueLines = getLines(ctx, value, 600);
+                        valueLines.forEach((line, i) => ctx.fillText(line, rightX, bottomY + 80 + (i * 90)));
+                    }
+                    break;
                 }
                 
-                ctx.globalAlpha = subjectOpacity;
-                ctx.font = `900 80px ${themeStyle.fontMain}`; 
-                ctx.fillStyle = themeStyle.subjectColor;
-                ctx.fillText(subject, canvas.width / 2, subjectY);
+                case Layout.MAGAZINE: {
+                     // Big background subject
+                     ctx.save();
+                     ctx.textAlign = 'center';
+                     ctx.textBaseline = 'middle';
+                     ctx.globalAlpha = 0.15;
+                     ctx.font = `900 250px ${themeStyle.fontMain}`;
+                     ctx.fillStyle = themeStyle.subjectColor;
+                     ctx.fillText(subject, centerX, centerY);
+                     ctx.restore();
 
-                ctx.globalAlpha = 1;
-                ctx.fillStyle = themeStyle.lineColor1;
-                ctx.fillRect((canvas.width - 200)/2, canvas.height * 0.58, 200, 4);
+                     // Foreground Subject
+                     ctx.textAlign = 'center';
+                     ctx.globalAlpha = 0.8;
+                     ctx.font = `bold 32px ${themeStyle.fontHeader}`;
+                     ctx.fillStyle = '#93c5fd';
+                     ctx.fillText(subjectLabel.toUpperCase(), centerX, centerY - 200);
 
-                if (numCols > 1) {
-                    ctx.globalAlpha = opacity;
-                    ctx.font = `italic 500 50px ${themeStyle.fontHeader}`;
-                    ctx.fillStyle = themeStyle.headerColor;
-                    ctx.fillText(header, canvas.width / 2, canvas.height * 0.68); 
+                     ctx.globalAlpha = 1;
+                     ctx.font = `900 70px ${themeStyle.fontMain}`;
+                     ctx.fillStyle = themeStyle.subjectColor;
+                     ctx.fillText(subject, centerX, centerY - 120);
 
-                    ctx.font = `bold 60px ${themeStyle.fontMain}`; 
-                    ctx.fillStyle = themeStyle.valueColor;
-                    const valueLines = getLines(ctx, value, 900); 
-                    valueLines.forEach((line, i) => {
-                        ctx.fillText(line, canvas.width / 2, canvas.height * 0.81 + (i * 80));
-                    });
+                     // Separator
+                     ctx.fillStyle = themeStyle.lineColor1;
+                     ctx.fillRect(centerX - 60, centerY - 50, 120, 6);
+
+                     // Attribute
+                     if (numCols > 1) {
+                         ctx.globalAlpha = opacity;
+                         ctx.font = `italic 500 45px ${themeStyle.fontHeader}`;
+                         ctx.fillStyle = themeStyle.headerColor;
+                         ctx.fillText(header, centerX, centerY + 50);
+
+                         ctx.font = `bold 70px ${themeStyle.fontMain}`;
+                         ctx.fillStyle = themeStyle.valueColor;
+                         const valueLines = getLines(ctx, value, 800);
+                         valueLines.forEach((line, i) => ctx.fillText(line, centerX, centerY + 130 + (i * 80)));
+                     }
+                     break;
+                }
+
+                case Layout.LOWER_THIRD: {
+                    // Content at bottom
+                    const bottomBase = canvas.height - 200;
+                    ctx.textBaseline = 'top';
+                    
+                    // Separator Line (Horizontal across)
+                    ctx.fillStyle = themeStyle.lineColor1;
+                    ctx.fillRect(50, bottomBase, canvas.width - 100, 3);
+                    
+                    // Subject (Left side)
+                    ctx.textAlign = 'left';
+                    const leftX = 80;
+                    
+                    ctx.globalAlpha = 0.6;
+                    ctx.font = `bold 28px ${themeStyle.fontHeader}`;
+                    ctx.fillStyle = '#93c5fd';
+                    ctx.fillText(subjectLabel.toUpperCase(), leftX, bottomBase - 160);
+
+                    ctx.globalAlpha = 1;
+                    ctx.font = `900 60px ${themeStyle.fontMain}`;
+                    ctx.fillStyle = themeStyle.subjectColor;
+                    const subLines = getLines(ctx, subject, 400);
+                    subLines.forEach((l, i) => ctx.fillText(l, leftX, bottomBase - 120 + (i * 70)));
+
+                    // Vertical Divider
+                    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+                    ctx.fillRect(500, bottomBase - 150, 2, 130);
+
+                    // Attribute (Right side)
+                    if (numCols > 1) {
+                        const rightX = 540;
+                        ctx.globalAlpha = opacity;
+                        ctx.font = `italic 500 35px ${themeStyle.fontHeader}`;
+                        ctx.fillStyle = themeStyle.headerColor;
+                        ctx.fillText(header, rightX, bottomBase - 140);
+                        
+                        ctx.font = `bold 50px ${themeStyle.fontMain}`;
+                        ctx.fillStyle = themeStyle.valueColor;
+                        const valLines = getLines(ctx, value, 450);
+                        valLines.forEach((line, i) => ctx.fillText(line, rightX, bottomBase - 90 + (i * 60)));
+                    }
+                    break;
+                }
+
+                case Layout.STACKED:
+                default: {
+                     // Default Stacked
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    
+                    ctx.globalAlpha = 0.6;
+                    ctx.font = `bold 42px ${themeStyle.fontHeader}`;
+                    ctx.fillStyle = '#93c5fd';
+                    ctx.fillText(subjectLabel.toUpperCase(), canvas.width / 2, canvas.height * 0.26);
+
+                    const isRowStart = attrIdx === 0;
+                    let subjectY = canvas.height * 0.44; 
+                    let subjectOpacity = 1;
+                    if (isRowStart && stepTime < 500) {
+                        const p = stepTime / 500;
+                        subjectY += (1 - p) * 20;
+                        subjectOpacity = p;
+                    }
+                    
+                    ctx.globalAlpha = subjectOpacity;
+                    ctx.font = `900 80px ${themeStyle.fontMain}`; 
+                    ctx.fillStyle = themeStyle.subjectColor;
+                    ctx.fillText(subject, canvas.width / 2, subjectY);
+
+                    ctx.globalAlpha = 1;
+                    ctx.fillStyle = themeStyle.lineColor1;
+                    ctx.fillRect((canvas.width - 200)/2, canvas.height * 0.58, 200, 4);
+
+                    if (numCols > 1) {
+                        ctx.globalAlpha = opacity;
+                        ctx.font = `italic 500 50px ${themeStyle.fontHeader}`;
+                        ctx.fillStyle = themeStyle.headerColor;
+                        ctx.fillText(header, canvas.width / 2, canvas.height * 0.68); 
+
+                        ctx.font = `bold 60px ${themeStyle.fontMain}`; 
+                        ctx.fillStyle = themeStyle.valueColor;
+                        const valueLines = getLines(ctx, value, 900); 
+                        valueLines.forEach((line, i) => {
+                            ctx.fillText(line, canvas.width / 2, canvas.height * 0.81 + (i * 80));
+                        });
+                    }
+                    break;
                 }
             }
 

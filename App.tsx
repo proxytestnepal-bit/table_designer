@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, Pause, Download, Wand2, Maximize2, Minimize2, Loader2, Clock, Film, Shuffle, Sparkles, LayoutTemplate, Database, Palette, ImageIcon, Mic, Volume2, Image as ImageDown } from 'lucide-react';
+import { Play, Pause, Download, Wand2, Maximize2, Minimize2, Loader2, Clock, Film, Shuffle, Sparkles, LayoutTemplate, Database, Palette, ImageIcon, Mic, Volume2, Image as ImageDown, Globe, RefreshCw } from 'lucide-react';
 import { TableData, AnimationConfig, Theme, AnimationStyle, Layout } from './types';
 import { DEFAULT_TABLE_DATA, DEFAULT_ANIMATION_CONFIG } from './constants';
 import { TablePreview } from './components/TablePreview';
@@ -41,6 +41,7 @@ function App() {
   const [isGenImage, setIsGenImage] = useState(false);
   const [isGenVoice, setIsGenVoice] = useState(false);
   const [voicePcm, setVoicePcm] = useState<string | null>(null);
+  const [narrativeLanguage, setNarrativeLanguage] = useState<'auto' | 'en' | 'ne'>('auto');
 
   // Refs
   const appContainerRef = useRef<HTMLDivElement>(null);
@@ -114,6 +115,23 @@ function App() {
       }
   };
 
+  const handleRegenerateSummary = async () => {
+      setIsGenVoice(true);
+      try {
+          const summary = await generateSummaryFromData(data, narrativeLanguage);
+          const newData = { ...data, summary };
+          setData(newData);
+          setJsonString(JSON.stringify(newData, null, 2));
+          // Clear existing voice if we change the text
+          setVoicePcm(null);
+      } catch(e) {
+          console.error(e);
+          alert("Failed to regenerate summary.");
+      } finally {
+          setIsGenVoice(false);
+      }
+  };
+
   const handleGenerateVoice = async () => {
       setIsGenVoice(true);
       try {
@@ -122,7 +140,7 @@ function App() {
           // If no summary exists, generate one from the data first
           if (!summaryText || summaryText.trim() === '') {
               try {
-                  summaryText = await generateSummaryFromData(data);
+                  summaryText = await generateSummaryFromData(data, narrativeLanguage);
                   // Update local data with new summary
                   const newData = { ...data, summary: summaryText };
                   setData(newData);
@@ -461,7 +479,7 @@ function App() {
 
                             {/* Voiceover Generator */}
                             <div className="space-y-2 pt-2 border-t border-slate-800">
-                                <div className="flex justify-between items-center">
+                                <div className="flex justify-between items-center mb-1">
                                     <div className="text-xs text-slate-500 font-semibold uppercase flex items-center gap-2">
                                         <Mic size={12} /> Narrative Voiceover
                                     </div>
@@ -474,6 +492,38 @@ function App() {
                                         </button>
                                     )}
                                 </div>
+
+                                {/* Language Selector */}
+                                <div className="relative mb-2">
+                                    <select
+                                        value={narrativeLanguage}
+                                        onChange={(e) => setNarrativeLanguage(e.target.value as any)}
+                                        className="w-full bg-slate-900 border border-slate-700 text-slate-300 text-xs rounded-md focus:ring-green-500 focus:border-green-500 block p-2 pl-8 appearance-none"
+                                    >
+                                        <option value="auto">Auto (Match Data)</option>
+                                        <option value="en">English</option>
+                                        <option value="ne">Nepali</option>
+                                    </select>
+                                    <div className="absolute inset-y-0 left-0 flex items-center pl-2 pointer-events-none text-slate-500">
+                                        <Globe size={12} />
+                                    </div>
+                                </div>
+
+                                {data.summary && !voicePcm && (
+                                    <div className="flex justify-between items-center mb-2 px-1">
+                                         <span className="text-[10px] text-slate-500 italic truncate max-w-[60%]">
+                                            Summary exists
+                                         </span>
+                                         <button 
+                                            onClick={handleRegenerateSummary}
+                                            disabled={isGenVoice}
+                                            className="text-[10px] flex items-center gap-1 text-blue-400 hover:text-blue-300 disabled:opacity-50"
+                                         >
+                                            <RefreshCw size={10} className={isGenVoice ? "animate-spin" : ""}/> Regenerate Text
+                                         </button>
+                                    </div>
+                                )}
+
                                 {voicePcm ? (
                                     <div className="flex items-center gap-2 p-2 bg-green-500/10 border border-green-500/20 rounded-lg text-green-400 text-xs">
                                         <Volume2 size={14} />
@@ -486,7 +536,7 @@ function App() {
                                         className="w-full py-3 border border-dashed border-slate-700 rounded-lg text-slate-500 hover:text-green-400 hover:border-green-500/50 hover:bg-green-500/5 transition-all flex flex-col items-center gap-1 disabled:opacity-50"
                                     >
                                         {isGenVoice ? <Loader2 size={16} className="animate-spin"/> : <Mic size={16}/>}
-                                        <span className="text-xs">Generate Narrative Summary</span>
+                                        <span className="text-xs">Generate Voiceover</span>
                                     </button>
                                 )}
                             </div>

@@ -125,7 +125,7 @@ export const fixTableJson = async (brokenJson: string): Promise<TableData> => {
   }
 }
 
-export const generateSummaryFromData = async (data: TableData): Promise<string> => {
+export const generateSummaryFromData = async (data: TableData, language: 'auto' | 'en' | 'ne' = 'auto'): Promise<string> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   // Create a simplified text representation of the table for the prompt
@@ -137,6 +137,10 @@ export const generateSummaryFromData = async (data: TableData): Promise<string> 
     ${data.data.slice(0, 10).map(row => row.join(" | ")).join("\n")}
   `;
 
+  let langInstruction = "Detect the language of the table data and write the summary in that same language.";
+  if (language === 'en') langInstruction = "Write the summary strictly in English, regardless of the data language.";
+  if (language === 'ne') langInstruction = "Write the summary strictly in Nepali (Devanagari script), regardless of the data language.";
+
   try {
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
@@ -144,6 +148,7 @@ export const generateSummaryFromData = async (data: TableData): Promise<string> 
       Task: Write a captivating, short (1-2 sentences) summary of the provided data table. 
       Goal: This text will be converted to speech and played as an introduction to the data visualization.
       Tone: Engaging, informative, and clear.
+      Language Requirement: ${langInstruction}
       
       Table Data:
       ${tableContext}
