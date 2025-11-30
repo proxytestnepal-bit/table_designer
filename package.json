@@ -1,6 +1,7 @@
 {
   "name": "loksewa-automatic",
   "private": true,
+  "homepage": "https://proxytestnepal-bit.github.io/loksewa-automatic"
   "version": "0.0.0",
   "type": "module",
   "scripts": {
