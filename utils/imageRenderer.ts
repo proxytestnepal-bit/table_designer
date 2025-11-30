@@ -336,6 +336,13 @@ export async function renderTableImage(data: TableData, config: AnimationConfig,
     const brandX = width - margin;
     ctx.fillText(brandText, brandX, footerY);
 
+    // AI Label
+    ctx.save();
+    ctx.font = `italic 24px ${themeStyle.fontMain}`;
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+    ctx.fillText("✨ AI Generated Content", brandX, footerY + 50);
+    ctx.restore();
+
     // Footer Logo
     if (logoImg) {
         const logoSize = 80;
