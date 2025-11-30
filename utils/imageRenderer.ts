@@ -75,6 +75,14 @@ export async function renderTableImage(data: TableData, config: AnimationConfig)
     
     ctx.globalAlpha = 1;
 
+    // Load Logo
+    let logoImg: HTMLImageElement | null = null;
+    try {
+        logoImg = await loadImage('logo.jpg');
+    } catch (e) {
+        console.warn("Logo failed to load");
+    }
+
     // --- Content Measurement & Layout ---
     // Goal: Fit content dynamically without truncation
     
@@ -312,8 +320,8 @@ export async function renderTableImage(data: TableData, config: AnimationConfig)
         
         // Truncate sources if extremely long, but typically this is fine in footer
         let printSource = sourceText;
-        if(ctx.measureText(printSource).width > contentWidth * 0.7) {
-             printSource = getLines(ctx, sourceText, contentWidth * 0.7)[0] + "...";
+        if(ctx.measureText(printSource).width > contentWidth * 0.5) {
+             printSource = getLines(ctx, sourceText, contentWidth * 0.5)[0] + "...";
         }
         ctx.fillText(printSource.toUpperCase(), margin, footerY);
     }
@@ -322,7 +330,26 @@ export async function renderTableImage(data: TableData, config: AnimationConfig)
     ctx.textAlign = 'right';
     ctx.fillStyle = themeStyle.subjectColor;
     ctx.font = `bold 40px ${themeStyle.fontMain}`;
-    ctx.fillText("LOKSEWA AUTOMATIC", width - margin, footerY);
+    const brandText = "LOKSEWA AUTOMATIC";
+    const brandX = width - margin;
+    ctx.fillText(brandText, brandX, footerY);
+
+    // Footer Logo
+    if (logoImg) {
+        const logoSize = 65;
+        const textWidth = ctx.measureText(brandText).width;
+        const logoX = brandX - textWidth - logoSize - 20; // 20px padding left of text
+        const logoY = footerY - 10; // Slightly adjust vertical alignment
+        
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(logoX + logoSize/2, logoY + logoSize/2, logoSize/2, 0, Math.PI*2);
+        ctx.closePath();
+        ctx.clip();
+        
+        ctx.drawImage(logoImg, logoX, logoY, logoSize, logoSize);
+        ctx.restore();
+    }
 
     return canvas.toDataURL('image/png');
 }

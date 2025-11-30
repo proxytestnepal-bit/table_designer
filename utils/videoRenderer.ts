@@ -1,4 +1,3 @@
-
 import { TableData, AnimationConfig, Theme, Layout } from '../types';
 import { PresentationAudio } from './audioSynth';
 
@@ -116,6 +115,14 @@ export async function renderVideo(
             } catch (e) {
                 console.warn("Failed to load background image for render");
             }
+        }
+
+        // Load Logo
+        let logoImage: HTMLImageElement | null = null;
+        try {
+            logoImage = await loadImage('logo.jpg');
+        } catch (e) {
+            console.warn("Logo failed to load");
         }
 
         // Setup Audio
@@ -356,6 +363,25 @@ export async function renderVideo(
                 const fillWidth = (elapsed / totalDuration) * canvas.width;
                 ctx.fillStyle = themeStyle.barColor1;
                 ctx.fillRect(0, barY, Math.min(fillWidth, canvas.width), barHeight);
+            }
+
+            // Watermark Logo (Top Right)
+            if (logoImage) {
+                const logoSize = 70;
+                const pad = 30;
+                ctx.save();
+                ctx.globalAlpha = 0.9;
+                
+                // Circular Clip
+                const lx = canvas.width - logoSize - pad;
+                const ly = pad;
+                ctx.beginPath();
+                ctx.arc(lx + logoSize/2, ly + logoSize/2, logoSize/2, 0, Math.PI*2);
+                ctx.closePath();
+                ctx.clip();
+
+                ctx.drawImage(logoImage, lx, ly, logoSize, logoSize);
+                ctx.restore();
             }
             
             requestAnimationFrame(drawFrame);

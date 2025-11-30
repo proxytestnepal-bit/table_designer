@@ -211,7 +211,7 @@ function App() {
         <header className="px-6 py-4 border-b border-slate-800 bg-slate-900/50 backdrop-blur-md flex items-center justify-between sticky top-0 z-50">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center shadow-lg shadow-blue-500/20">
-              <img src="logo.png" alt="Logo" className="w-full h-full object-cover" />
+              <img src="logo.jpg" alt="Logo" className="w-full h-full object-cover" />
             </div>
             <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">
               Loksewa Automatic
