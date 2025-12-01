@@ -23,4 +23,6 @@ export const DEFAULT_ANIMATION_CONFIG: AnimationConfig = {
   highlightActive: true,
   showProgressBar: true,
   durationPerItem: 2.5, 
+  showAppName: true,
+  showAiWatermark: false,
 };

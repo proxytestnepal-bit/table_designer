@@ -38,4 +38,6 @@ export interface AnimationConfig {
   durationPerItem: number;
   backgroundImage?: string; // base64
   backgroundImagePrompt?: string; 
+  showAppName: boolean;
+  showAiWatermark: boolean;
 }

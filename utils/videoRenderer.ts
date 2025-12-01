@@ -1,3 +1,4 @@
+
 import { TableData, AnimationConfig, Theme, Layout } from '../types';
 import { PresentationAudio } from './audioSynth';
 
@@ -514,47 +515,77 @@ export async function renderVideo(
                 ctx.fillRect(0, barY, Math.min(fillWidth, canvas.width), barHeight);
             }
 
-            // Watermark Logo (Top Right)
-            if (logoImage) {
-                const logoSize = 80;
-                const pad = 30;
-                ctx.save();
-                ctx.globalAlpha = 0.9;
-                
-                const lx = canvas.width - logoSize - pad;
-                const ly = pad;
-                
-                // Draw rounded rectangle container logic
-                const radius = 12;
-                ctx.beginPath();
-                ctx.moveTo(lx + radius, ly);
-                ctx.lineTo(lx + logoSize - radius, ly);
-                ctx.quadraticCurveTo(lx + logoSize, ly, lx + logoSize, ly + radius);
-                ctx.lineTo(lx + logoSize, ly + logoSize - radius);
-                ctx.quadraticCurveTo(lx + logoSize, ly + logoSize, lx + logoSize - radius, ly + logoSize);
-                ctx.lineTo(lx + radius, ly + logoSize);
-                ctx.quadraticCurveTo(lx, ly + logoSize, lx, ly + logoSize - radius);
-                ctx.lineTo(lx, ly + radius);
-                ctx.quadraticCurveTo(lx, ly, lx + radius, ly);
-                ctx.closePath();
-                ctx.clip();
+            // --- BRANDING & WATERMARKS ---
 
-                // Draw image containing aspect ratio
-                const imgAspect = logoImage.width / logoImage.height;
-                let drawW = logoSize;
-                let drawH = logoSize;
-                let dx = lx;
-                let dy = ly;
-                
-                if (imgAspect > 1) { // Landscape
-                    drawH = logoSize / imgAspect;
-                    dy = ly + (logoSize - drawH) / 2;
-                } else { // Portrait
-                    drawW = logoSize * imgAspect;
-                    dx = lx + (logoSize - drawW) / 2;
+            if (config.showAppName) {
+                // Watermark Logo (Top Right)
+                if (logoImage) {
+                    const logoSize = 80;
+                    const pad = 30;
+                    ctx.save();
+                    ctx.globalAlpha = 0.9;
+                    
+                    const lx = canvas.width - logoSize - pad;
+                    const ly = pad;
+                    
+                    // Draw rounded rectangle container logic
+                    const radius = 12;
+                    ctx.beginPath();
+                    ctx.moveTo(lx + radius, ly);
+                    ctx.lineTo(lx + logoSize - radius, ly);
+                    ctx.quadraticCurveTo(lx + logoSize, ly, lx + logoSize, ly + radius);
+                    ctx.lineTo(lx + logoSize, ly + logoSize - radius);
+                    ctx.quadraticCurveTo(lx + logoSize, ly + logoSize, lx + logoSize - radius, ly + logoSize);
+                    ctx.lineTo(lx + radius, ly + logoSize);
+                    ctx.quadraticCurveTo(lx, ly + logoSize, lx, ly + logoSize - radius);
+                    ctx.lineTo(lx, ly + radius);
+                    ctx.quadraticCurveTo(lx, ly, lx + radius, ly);
+                    ctx.closePath();
+                    ctx.clip();
+    
+                    // Draw image containing aspect ratio
+                    const imgAspect = logoImage.width / logoImage.height;
+                    let drawW = logoSize;
+                    let drawH = logoSize;
+                    let dx = lx;
+                    let dy = ly;
+                    
+                    if (imgAspect > 1) { // Landscape
+                        drawH = logoSize / imgAspect;
+                        dy = ly + (logoSize - drawH) / 2;
+                    } else { // Portrait
+                        drawW = logoSize * imgAspect;
+                        dx = lx + (logoSize - drawW) / 2;
+                    }
+                    
+                    ctx.drawImage(logoImage, dx, dy, drawW, drawH);
+                    ctx.restore();
                 }
-                
-                ctx.drawImage(logoImage, dx, dy, drawW, drawH);
+
+                // App Name Text (Bottom Right - above progress bar)
+                ctx.save();
+                ctx.textAlign = 'right';
+                ctx.textBaseline = 'bottom';
+                ctx.font = `bold 24px ${themeStyle.fontMain}`;
+                ctx.fillStyle = themeStyle.subjectColor;
+                ctx.globalAlpha = 0.7;
+                ctx.shadowColor = 'black';
+                ctx.shadowBlur = 4;
+                // Position just above progress bar (20px) + padding (20px)
+                ctx.fillText("LOKSEWA AUTOMATIC", canvas.width - 20, canvas.height - 40);
+                ctx.restore();
+            }
+
+            if (config.showAiWatermark) {
+                ctx.save();
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'bottom';
+                ctx.font = `14px ${themeStyle.fontMain}`;
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                ctx.shadowColor = 'black';
+                ctx.shadowBlur = 2;
+                // Position just above progress bar (20px) + padding (20px)
+                ctx.fillText("AI Generated Content", 20, canvas.height - 40);
                 ctx.restore();
             }
             

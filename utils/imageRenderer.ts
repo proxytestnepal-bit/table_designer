@@ -1,3 +1,4 @@
+
 import { TableData, AnimationConfig, Theme } from '../types';
 import { getThemeConfig, loadImage, getLines } from './videoRenderer';
 
@@ -328,62 +329,82 @@ export async function renderTableImage(data: TableData, config: AnimationConfig,
         ctx.fillText(printSource.toUpperCase(), margin, footerY);
     }
     
-    // Branding
-    ctx.textAlign = 'right';
-    ctx.fillStyle = themeStyle.subjectColor;
-    ctx.font = `bold 40px ${themeStyle.fontMain}`;
-    const brandText = "LOKSEWA AUTOMATIC";
-    const brandX = width - margin;
-    ctx.fillText(brandText, brandX, footerY);
-
-    // Footer Logo
-    if (logoImg) {
-        const logoSize = 80;
-        const textWidth = ctx.measureText(brandText).width;
-        // Position logo to the left of the brand text
-        const logoX = brandX - textWidth - logoSize - 25; 
-        const logoY = footerY - 20; // Align vertically with text baseline roughly
-        
-        ctx.save();
-        // Rounded corner clip for logo
-        const radius = 10;
-        ctx.beginPath();
-        ctx.moveTo(logoX + radius, logoY);
-        ctx.lineTo(logoX + logoSize - radius, logoY);
-        ctx.quadraticCurveTo(logoX + logoSize, logoY, logoX + logoSize, logoY + radius);
-        ctx.lineTo(logoX + logoSize, logoY + logoSize - radius);
-        ctx.quadraticCurveTo(logoX + logoSize, logoY + logoSize, logoX + logoSize - radius, logoY + logoSize);
-        ctx.lineTo(logoX + radius, logoY + logoSize);
-        ctx.quadraticCurveTo(logoX, logoY + logoSize, logoX, logoY + logoSize - radius);
-        ctx.lineTo(logoX, logoY + radius);
-        ctx.quadraticCurveTo(logoX, logoY, logoX + radius, logoY);
-        ctx.closePath();
-        ctx.clip();
-        
-        // Draw image "contain" style
-        const imgAspect = logoImg.width / logoImg.height;
-        let drawW = logoSize;
-        let drawH = logoSize;
-        let dx = logoX;
-        let dy = logoY;
-        
-        if (imgAspect > 1) { // Landscape image
-            drawH = logoSize / imgAspect;
-            dy = logoY + (logoSize - drawH) / 2;
-        } else { // Portrait image
-            drawW = logoSize * imgAspect;
-            dx = logoX + (logoSize - drawW) / 2;
-        }
-        
-        ctx.drawImage(logoImg, dx, dy, drawW, drawH);
-        ctx.restore();
-    } else {
-        // Fallback if logo fails to load: Draw text placeholder
-        const textWidth = ctx.measureText(brandText).width;
-        const logoX = brandX - textWidth - 20; 
+    // --- BRANDING ---
+    if (config.showAppName) {
         ctx.textAlign = 'right';
-        ctx.fillStyle = 'rgba(255,255,255,0.3)';
-        ctx.fillText("Loksewa", logoX, footerY);
+        ctx.fillStyle = themeStyle.subjectColor;
+        ctx.font = `bold 40px ${themeStyle.fontMain}`;
+        const brandText = "LOKSEWA AUTOMATIC";
+        const brandX = width - margin;
+        ctx.fillText(brandText, brandX, footerY);
+
+        // Footer Logo
+        if (logoImg) {
+            const logoSize = 80;
+            const textWidth = ctx.measureText(brandText).width;
+            // Position logo to the left of the brand text
+            const logoX = brandX - textWidth - logoSize - 25; 
+            const logoY = footerY - 20; // Align vertically with text baseline roughly
+            
+            ctx.save();
+            // Rounded corner clip for logo
+            const radius = 10;
+            ctx.beginPath();
+            ctx.moveTo(logoX + radius, logoY);
+            ctx.lineTo(logoX + logoSize - radius, logoY);
+            ctx.quadraticCurveTo(logoX + logoSize, logoY, logoX + logoSize, logoY + radius);
+            ctx.lineTo(logoX + logoSize, logoY + logoSize - radius);
+            ctx.quadraticCurveTo(logoX + logoSize, logoY + logoSize, logoX + logoSize - radius, logoY + logoSize);
+            ctx.lineTo(logoX + radius, logoY + logoSize);
+            ctx.quadraticCurveTo(logoX, logoY + logoSize, logoX, logoY + logoSize - radius);
+            ctx.lineTo(logoX, logoY + radius);
+            ctx.quadraticCurveTo(logoX, logoY, logoX + radius, logoY);
+            ctx.closePath();
+            ctx.clip();
+            
+            // Draw image "contain" style
+            const imgAspect = logoImg.width / logoImg.height;
+            let drawW = logoSize;
+            let drawH = logoSize;
+            let dx = logoX;
+            let dy = logoY;
+            
+            if (imgAspect > 1) { // Landscape image
+                drawH = logoSize / imgAspect;
+                dy = logoY + (logoSize - drawH) / 2;
+            } else { // Portrait image
+                drawW = logoSize * imgAspect;
+                dx = logoX + (logoSize - drawW) / 2;
+            }
+            
+            ctx.drawImage(logoImg, dx, dy, drawW, drawH);
+            ctx.restore();
+        } else {
+            // Fallback if logo fails to load: Draw text placeholder
+            const textWidth = ctx.measureText(brandText).width;
+            const logoX = brandX - textWidth - 20; 
+            ctx.textAlign = 'right';
+            ctx.fillStyle = 'rgba(255,255,255,0.3)';
+            ctx.fillText("Loksewa", logoX, footerY);
+        }
+    }
+
+    // --- AI WATERMARK ---
+    if (config.showAiWatermark) {
+         ctx.save();
+         ctx.textAlign = 'left';
+         ctx.font = `italic 24px ${themeStyle.fontMain}`;
+         ctx.fillStyle = 'rgba(255,255,255,0.4)';
+         // Position in footer area, but slightly offset if sources are present
+         const watermarkX = (data.sources && data.sources.length) ? margin : margin; 
+         // If sources exist, put it next to them or above/below? 
+         // Let's put it on the far left, above sources if needed, or simply same line if room.
+         // Actually, let's put it bottom left corner below footer line if there's space, or top right corner.
+         // Let's go with bottom left, but if Sources take up space, we might overlap.
+         // Simplified: Bottom center for watermark? Or Bottom Left.
+         // Let's place it at the very bottom edge of the image, below the footer line content.
+         ctx.fillText("AI Generated Content", margin, footerY + 40);
+         ctx.restore();
     }
 
     return canvas.toDataURL('image/png');

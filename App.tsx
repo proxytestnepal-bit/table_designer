@@ -1,5 +1,6 @@
+
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, Pause, Download, Wand2, Maximize2, Minimize2, Loader2, Clock, Film, Shuffle, Sparkles, LayoutTemplate, Database, Palette, ImageIcon, Mic, Volume2, Image as ImageDown, Globe, RefreshCw } from 'lucide-react';
+import { Play, Pause, Download, Wand2, Maximize2, Minimize2, Loader2, Clock, Film, Shuffle, Sparkles, LayoutTemplate, Database, Palette, ImageIcon, Mic, Volume2, Image as ImageDown, Globe, RefreshCw, Type, Bot } from 'lucide-react';
 import { TableData, AnimationConfig, Theme, AnimationStyle, Layout } from './types';
 import { DEFAULT_TABLE_DATA, DEFAULT_ANIMATION_CONFIG } from './constants';
 import { TablePreview } from './components/TablePreview';
@@ -79,7 +80,13 @@ function App() {
       setVoicePcm(null); 
       setConfig(prev => ({ ...prev, backgroundImage: undefined }));
     } catch (error) {
-      alert("Failed to generate table. Please check your API key or try a different prompt.");
+      // Improved error handling for 429 Resource Exhausted
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes('429') || errMsg.includes('RESOURCE_EXHAUSTED') || errMsg.includes('Quota exceeded')) {
+         alert("API Quota Exceeded. The 'Gemini 2.5 Flash' model is temporarily busy or your free tier limit has been reached. Please wait a moment and try again.");
+      } else {
+         alert("Failed to generate table. Please check your API key or try a different prompt.");
+      }
     } finally {
       setIsGenerating(false);
     }
@@ -109,7 +116,12 @@ function App() {
           setConfig(prev => ({ ...prev, backgroundImage: base64Img }));
       } catch (e) {
           console.error(e);
-          alert("Failed to generate image.");
+           const errMsg = e instanceof Error ? e.message : String(e);
+           if (errMsg.includes('429') || errMsg.includes('RESOURCE_EXHAUSTED')) {
+                alert("Image Generation Quota Exceeded. Please try again later.");
+           } else {
+                alert("Failed to generate image.");
+           }
       } finally {
           setIsGenImage(false);
       }
@@ -147,7 +159,12 @@ function App() {
                   setJsonString(JSON.stringify(newData, null, 2));
               } catch (err) {
                   console.error("Failed to generate summary from data", err);
-                  alert("Could not automatically generate a summary. Please add a 'summary' field to your JSON.");
+                   const errMsg = err instanceof Error ? err.message : String(err);
+                   if (errMsg.includes('429')) {
+                        alert("API Quota Exceeded during summary generation.");
+                   } else {
+                        alert("Could not automatically generate a summary. Please add a 'summary' field to your JSON.");
+                   }
                   setIsGenVoice(false);
                   return;
               }
@@ -159,7 +176,12 @@ function App() {
           }
       } catch (e) {
           console.error(e);
-          alert("Failed to generate voiceover.");
+          const errMsg = e instanceof Error ? e.message : String(e);
+           if (errMsg.includes('429')) {
+                alert("Voice Generation Quota Exceeded. Please try again later.");
+           } else {
+                alert("Failed to generate voiceover.");
+           }
       } finally {
           setIsGenVoice(false);
       }
@@ -542,8 +564,36 @@ function App() {
                             </div>
 
                             <div className="pt-4 border-t border-slate-800 space-y-4">
-                                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider">Timing & Settings</h3>
+                                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider">Export Settings</h3>
                                 
+                                {/* Show App Name Toggle */}
+                                <div className="flex justify-between items-center p-3 bg-slate-800 rounded-lg border border-slate-700">
+                                    <label className="text-sm text-slate-300 flex items-center gap-2">
+                                        <Type size={16} className="text-blue-400"/> Show App Name
+                                    </label>
+                                    <input 
+                                        type="checkbox" 
+                                        checked={config.showAppName}
+                                        disabled={isExporting}
+                                        onChange={(e) => setConfig({...config, showAppName: e.target.checked})}
+                                        className="w-5 h-5 rounded border-slate-600 text-blue-600 bg-slate-700 focus:ring-blue-500 disabled:opacity-50"
+                                    />
+                                </div>
+
+                                {/* Show AI Watermark Toggle */}
+                                <div className="flex justify-between items-center p-3 bg-slate-800 rounded-lg border border-slate-700">
+                                    <label className="text-sm text-slate-300 flex items-center gap-2">
+                                        <Bot size={16} className="text-purple-400"/> Show AI Watermark
+                                    </label>
+                                    <input 
+                                        type="checkbox" 
+                                        checked={config.showAiWatermark}
+                                        disabled={isExporting}
+                                        onChange={(e) => setConfig({...config, showAiWatermark: e.target.checked})}
+                                        className="w-5 h-5 rounded border-slate-600 text-purple-600 bg-slate-700 focus:ring-purple-500 disabled:opacity-50"
+                                    />
+                                </div>
+
                                 <div className="space-y-2">
                                     <label className="text-sm text-slate-300 flex justify-between items-center">
                                         <span className="flex items-center gap-2"><Clock size={14}/> Duration per Item</span>
