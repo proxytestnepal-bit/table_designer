@@ -557,18 +557,6 @@ export async function renderVideo(
                 ctx.drawImage(logoImage, dx, dy, drawW, drawH);
                 ctx.restore();
             }
-
-             // AI Generated Label (Bottom Right)
-            ctx.save();
-            ctx.font = `bold 20px ${themeStyle.fontMain}`;
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-            ctx.textAlign = 'right';
-            ctx.textBaseline = 'bottom';
-            const aiLabelX = canvas.width - 30;
-            // Place above progress bar if visible (bar height is 20)
-            const aiLabelY = config.showProgressBar ? canvas.height - 30 : canvas.height - 20; 
-            ctx.fillText("✨ AI Generated", aiLabelX, aiLabelY);
-            ctx.restore();
             
             requestAnimationFrame(drawFrame);
         };
