@@ -271,8 +271,8 @@ function App() {
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
       {/* Header */}
       {!isFullscreen && (
-        <header className="px-6 py-4 border-b border-slate-800 bg-slate-900/50 backdrop-blur-md flex items-center justify-between sticky top-0 z-50">
-          <div className="flex items-center gap-3">
+        <header className="px-4 md:px-6 py-3 md:py-4 border-b border-slate-800 bg-slate-900/50 backdrop-blur-md flex items-center justify-between sticky top-0 z-50">
+          <div className="flex items-center gap-2 md:gap-3">
             <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center shadow-lg shadow-blue-500/20 bg-slate-800">
               <img 
                 src={logoSrc} 
@@ -284,62 +284,140 @@ function App() {
                 }}
               />
             </div>
-            <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">
+            <h1 className="text-lg md:text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400 truncate max-w-[150px] md:max-w-none">
               Loksewa Automatic
             </h1>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 md:gap-3">
              <button
               onClick={() => {
                   const nextState = !showPromptInput;
                   setShowPromptInput(nextState);
                   if(nextState) setSidebarTab('data');
+                  // On mobile, scroll to editor if opening prompt
+                  if(window.innerWidth < 768 && nextState) {
+                      setTimeout(() => document.getElementById('control-panel')?.scrollIntoView({ behavior: 'smooth' }), 100);
+                  }
               }}
               disabled={isExporting}
-              className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-full text-sm font-medium transition-colors border border-slate-700"
+              className="flex items-center justify-center gap-2 w-10 h-10 md:w-auto md:h-auto md:px-4 md:py-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-full text-sm font-medium transition-colors border border-slate-700"
             >
               <Wand2 size={16} className="text-purple-400" />
-              <span>AI Generate</span>
+              <span className="hidden md:inline">AI Generate</span>
             </button>
             <button
                 onClick={handleExportImage}
                 disabled={isExporting}
                 className={clsx(
-                    "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all border",
+                    "flex items-center justify-center gap-2 w-10 h-10 md:w-auto md:h-auto md:px-4 md:py-2 rounded-full text-sm font-medium transition-all border",
                     isExporting 
                     ? "bg-slate-800 text-slate-500 border-slate-700 cursor-not-allowed"
                     : "bg-purple-600/10 hover:bg-purple-600/20 text-purple-400 border-purple-600/20"
                 )}
             >
                 <ImageIcon size={16} />
-                <span>Export for Social</span>
+                <span className="hidden md:inline">Social</span>
             </button>
             <button
               onClick={handleExportVideo}
               disabled={isExporting}
               className={clsx(
-                  "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all border",
+                  "flex items-center justify-center gap-2 w-10 h-10 md:w-auto md:h-auto md:px-4 md:py-2 rounded-full text-sm font-medium transition-all border",
                   isExporting 
                     ? "bg-slate-800 text-slate-500 border-slate-700 cursor-not-allowed"
                     : "bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 border-blue-600/20"
               )}
             >
               {isExporting && exportProgress > 0 ? <Loader2 size={16} className="animate-spin"/> : <Download size={16} />}
-              <span>{isExporting && exportProgress > 0 ? `Rendering ${exportProgress}%` : "Export Video"}</span>
+              <span className="hidden md:inline">{isExporting && exportProgress > 0 ? `${exportProgress}%` : "Export"}</span>
             </button>
           </div>
         </header>
       )}
 
       {/* Main Content */}
-      <main className={clsx("flex-1 flex overflow-hidden", isFullscreen ? "h-screen" : "p-6 gap-6")}>
+      <main className={clsx(
+          "flex-1 flex overflow-hidden", 
+          isFullscreen ? "h-screen flex-col" : "flex-col md:flex-row p-4 md:p-6 gap-4 md:gap-6"
+      )}>
         
-        {/* Left Panel: Tabs for Data & Design (Hidden in Fullscreen) */}
+        {/* Right Panel: Preview (Order 1 on Mobile so you see result first) */}
+        <div 
+            ref={appContainerRef} 
+            className={clsx(
+                "relative flex flex-col items-center justify-center order-1 md:order-2",
+                isFullscreen ? "h-full bg-black flex-1" : "w-full md:flex-1 h-[400px] md:h-auto min-h-[300px]"
+            )}
+        >
+           {/* Exporting Modal Overlay */}
+           {isExporting && (
+             <div className="absolute inset-0 z-[60] bg-slate-950/90 backdrop-blur-sm flex flex-col items-center justify-center space-y-6 animate-in fade-in rounded-xl">
+                 <div className="relative">
+                    <div className="w-24 h-24 rounded-full border-4 border-slate-800 flex items-center justify-center">
+                        <div className="w-full h-full rounded-full border-4 border-t-purple-500 border-r-blue-500 border-b-transparent border-l-transparent animate-spin absolute inset-0"/>
+                        {exportProgress > 0 && <span className="text-2xl font-bold text-white">{exportProgress}%</span>}
+                    </div>
+                 </div>
+                 <div className="text-center px-4">
+                     <h2 className="text-xl font-bold text-white mb-2">{exportProgress > 0 ? "Composing Video" : "Generating Image"}</h2>
+                     <p className="text-slate-400 text-sm max-w-md mx-auto">
+                        {exportProgress > 0 ? "Rendering frame by frame..." : "Creating high-res snapshot..."}
+                     </p>
+                 </div>
+             </div>
+           )}
+
+           {/* Toolbar (Floating in Fullscreen) */}
+           <div className={clsx(
+               "absolute top-4 z-50 flex items-center gap-2 p-2 rounded-full bg-slate-800/80 backdrop-blur border border-white/10 shadow-2xl transition-opacity duration-300",
+               isFullscreen && isPlaying ? "opacity-0 hover:opacity-100" : "opacity-100",
+               isExporting ? "hidden" : "" 
+           )}>
+              <button 
+                onClick={() => setIsPlaying(!isPlaying)}
+                className="w-10 h-10 rounded-full bg-blue-500 hover:bg-blue-400 text-white flex items-center justify-center transition-transform active:scale-95 shadow-lg shadow-blue-500/30"
+                title={isPlaying ? "Reset" : "Play Presentation"}
+              >
+                {isPlaying ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" className="ml-1" />}
+              </button>
+              
+              <div className="w-px h-6 bg-white/20 mx-1" />
+
+              <button 
+                onClick={handleRandomizeDesign}
+                className="p-2 text-slate-300 hover:text-white hover:bg-white/10 rounded-full transition-colors"
+                title="Shuffle Design"
+              >
+                <Shuffle size={20} />
+              </button>
+
+              <div className="w-px h-6 bg-white/20 mx-1" />
+
+              <button 
+                onClick={toggleFullscreen}
+                className="p-2 text-slate-300 hover:text-white hover:bg-white/10 rounded-full transition-colors"
+                title="Fullscreen Mode"
+              >
+                {isFullscreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
+              </button>
+           </div>
+
+           <TablePreview 
+              data={data}
+              config={config}
+              isPlaying={isPlaying}
+              onAnimationComplete={() => setIsPlaying(false)}
+              isFullscreen={isFullscreen}
+              voicePcm={voicePcm}
+           />
+        </div>
+
+        {/* Left Panel: Tabs for Data & Design (Hidden in Fullscreen, Order 2 on mobile) */}
         {!isFullscreen && (
-          <div className="w-1/3 min-w-[350px] flex flex-col bg-slate-900 rounded-xl border border-slate-800 shadow-xl overflow-hidden">
+          <div id="control-panel" className="w-full md:w-1/3 md:min-w-[350px] flex flex-col bg-slate-900 rounded-xl border border-slate-800 shadow-xl overflow-hidden order-2 md:order-1 h-[500px] md:h-auto">
             
             {/* Tab Header */}
-            <div className="flex border-b border-slate-800">
+            <div className="flex border-b border-slate-800 shrink-0">
                 <button
                     onClick={() => setSidebarTab('data')}
                     className={clsx(
@@ -378,14 +456,14 @@ function App() {
                                 value={prompt}
                                 onChange={(e) => setPrompt(e.target.value)}
                                 disabled={isGenerating || isExporting}
-                                placeholder="e.g. Top 10 Mountains, Solar System Planets..."
+                                placeholder="e.g. Top 10 Mountains..."
                                 className="flex-1 bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none disabled:opacity-50"
                                 onKeyDown={(e) => e.key === 'Enter' && handleGenerate()}
                             />
                             <button 
                                 onClick={handleGenerate}
                                 disabled={isGenerating || !prompt || isExporting}
-                                className="bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-lg px-4 flex items-center justify-center transition-colors"
+                                className="bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-lg px-3 md:px-4 flex items-center justify-center transition-colors"
                             >
                                 {isGenerating ? <Loader2 className="animate-spin" size={18}/> : <Wand2 size={18} />}
                             </button>
@@ -416,7 +494,7 @@ function App() {
 
                 {/* DESIGN TAB */}
                 {sidebarTab === 'design' && (
-                     <div className="flex-1 overflow-y-auto p-6 custom-scrollbar animate-in fade-in slide-in-from-right-4 duration-300">
+                     <div className="flex-1 overflow-y-auto p-4 md:p-6 custom-scrollbar animate-in fade-in slide-in-from-right-4 duration-300">
                         <div className="space-y-6">
                             
                              <div className="flex items-center justify-between">
@@ -430,39 +508,40 @@ function App() {
                              </div>
 
                              {/* Theme Selectors */}
-                            <div className="space-y-2">
-                                <div className="text-xs text-slate-500 font-semibold uppercase">Theme</div>
-                                <div className="relative">
-                                    <select
-                                        value={config.theme}
-                                        onChange={(e) => setConfig({...config, theme: e.target.value as Theme})}
-                                        className="w-full bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded-lg focus:ring-purple-500 focus:border-purple-500 block p-3 capitalize cursor-pointer transition-colors hover:border-slate-600 appearance-none"
-                                    >
-                                        {Object.values(Theme).map((t) => (
-                                            <option key={t} value={t}>{t.replace('_', ' ')}</option>
-                                        ))}
-                                    </select>
-                                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-slate-400">
-                                        <Sparkles size={16} />
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <div className="text-xs text-slate-500 font-semibold uppercase">Theme</div>
+                                    <div className="relative">
+                                        <select
+                                            value={config.theme}
+                                            onChange={(e) => setConfig({...config, theme: e.target.value as Theme})}
+                                            className="w-full bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded-lg focus:ring-purple-500 focus:border-purple-500 block p-2.5 capitalize cursor-pointer transition-colors hover:border-slate-600 appearance-none"
+                                        >
+                                            {Object.values(Theme).map((t) => (
+                                                <option key={t} value={t}>{t.replace('_', ' ')}</option>
+                                            ))}
+                                        </select>
+                                        <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none text-slate-400">
+                                            <Sparkles size={14} />
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            {/* Layout Selector */}
-                            <div className="space-y-2">
-                                <div className="text-xs text-slate-500 font-semibold uppercase">Layout</div>
-                                <div className="relative">
-                                    <select
-                                        value={config.layout}
-                                        onChange={(e) => setConfig({...config, layout: e.target.value as Layout})}
-                                        className="w-full bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-3 capitalize cursor-pointer transition-colors hover:border-slate-600 appearance-none"
-                                    >
-                                        {Object.values(Layout).map((l) => (
-                                            <option key={l} value={l}>{l.replace('_', ' ')}</option>
-                                        ))}
-                                    </select>
-                                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-slate-400">
-                                        <LayoutTemplate size={16} />
+                                <div className="space-y-2">
+                                    <div className="text-xs text-slate-500 font-semibold uppercase">Layout</div>
+                                    <div className="relative">
+                                        <select
+                                            value={config.layout}
+                                            onChange={(e) => setConfig({...config, layout: e.target.value as Layout})}
+                                            className="w-full bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 capitalize cursor-pointer transition-colors hover:border-slate-600 appearance-none"
+                                        >
+                                            {Object.values(Layout).map((l) => (
+                                                <option key={l} value={l}>{l.replace('_', ' ')}</option>
+                                            ))}
+                                        </select>
+                                        <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none text-slate-400">
+                                            <LayoutTemplate size={14} />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -632,78 +711,6 @@ function App() {
             </div>
           </div>
         )}
-
-        {/* Right Panel: Preview */}
-        <div ref={appContainerRef} className={clsx("flex-1 relative flex flex-col items-center justify-center", isFullscreen ? "bg-black" : "")}>
-           
-           {/* Exporting Modal Overlay */}
-           {isExporting && (
-             <div className="absolute inset-0 z-[60] bg-slate-950/90 backdrop-blur-sm flex flex-col items-center justify-center space-y-6 animate-in fade-in">
-                 <div className="relative">
-                    <div className="w-24 h-24 rounded-full border-4 border-slate-800 flex items-center justify-center">
-                        <div className="w-full h-full rounded-full border-4 border-t-purple-500 border-r-blue-500 border-b-transparent border-l-transparent animate-spin absolute inset-0"/>
-                        {exportProgress > 0 && <span className="text-2xl font-bold text-white">{exportProgress}%</span>}
-                    </div>
-                 </div>
-                 <div className="text-center">
-                     <h2 className="text-xl font-bold text-white mb-2">{exportProgress > 0 ? "Composing Video" : "Generating Image"}</h2>
-                     <p className="text-slate-400 text-sm max-w-md">
-                        {exportProgress > 0 ? "Please wait while we render your presentation frame by frame." : "Creating high-resolution snapshot..."}
-                     </p>
-                 </div>
-                 {exportProgress > 0 && (
-                 <div className="flex items-center gap-2 text-xs text-slate-500 bg-slate-900 px-3 py-1 rounded-full border border-slate-800">
-                    <Film size={12} />
-                    <span>Rendering 1:1 (1080x1080) • 30 FPS • {config.theme} • {config.layout}</span>
-                 </div>
-                 )}
-             </div>
-           )}
-
-           {/* Toolbar (Floating in Fullscreen) */}
-           <div className={clsx(
-               "absolute top-4 z-50 flex items-center gap-2 p-2 rounded-full bg-slate-800/80 backdrop-blur border border-white/10 shadow-2xl transition-opacity duration-300",
-               isFullscreen && isPlaying ? "opacity-0 hover:opacity-100" : "opacity-100",
-               isExporting ? "hidden" : "" 
-           )}>
-              <button 
-                onClick={() => setIsPlaying(!isPlaying)}
-                className="w-10 h-10 rounded-full bg-blue-500 hover:bg-blue-400 text-white flex items-center justify-center transition-transform active:scale-95 shadow-lg shadow-blue-500/30"
-                title={isPlaying ? "Reset" : "Play Presentation"}
-              >
-                {isPlaying ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" className="ml-1" />}
-              </button>
-              
-              <div className="w-px h-6 bg-white/20 mx-1" />
-
-              <button 
-                onClick={handleRandomizeDesign}
-                className="p-2 text-slate-300 hover:text-white hover:bg-white/10 rounded-full transition-colors"
-                title="Shuffle Design"
-              >
-                <Shuffle size={20} />
-              </button>
-
-              <div className="w-px h-6 bg-white/20 mx-1" />
-
-              <button 
-                onClick={toggleFullscreen}
-                className="p-2 text-slate-300 hover:text-white hover:bg-white/10 rounded-full transition-colors"
-                title="Fullscreen Mode"
-              >
-                {isFullscreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
-              </button>
-           </div>
-
-           <TablePreview 
-              data={data}
-              config={config}
-              isPlaying={isPlaying}
-              onAnimationComplete={() => setIsPlaying(false)}
-              isFullscreen={isFullscreen}
-              voicePcm={voicePcm}
-           />
-        </div>
 
       </main>
     </div>

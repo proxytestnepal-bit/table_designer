@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { clsx } from 'clsx';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
@@ -26,7 +27,9 @@ export const Editor: React.FC<EditorProps> = ({ jsonString, setJsonString, isVal
             value={jsonString}
             onChange={(e) => setJsonString(e.target.value)}
             className={clsx(
-                "flex-1 w-full bg-slate-800 text-slate-200 p-4 font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-inset",
+                "flex-1 w-full bg-slate-800 text-slate-200 p-4 font-mono resize-none focus:outline-none focus:ring-2 focus:ring-inset",
+                // Mobile: text-base (16px) prevents zoom. Desktop: text-sm for better density.
+                "text-base md:text-sm", 
                 isValid ? "focus:ring-blue-500/50" : "focus:ring-red-500/50"
             )}
             spellCheck={false}
